@@ -1,4 +1,4 @@
-@extends('layouts.KepalaSekolah')
+@extends('layouts.kepalaSekolah')
 
 @section('content')
 <h1 class="mb-4">Profil Kepala Sekolah</h1>

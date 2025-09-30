@@ -39,8 +39,13 @@ class AuthController extends Controller
                 $message = 'Selamat datang, ' . $nama . '!';
                 return redirect()->route('guru.dashboard')->with('toast_success', $message);
             } else {
-                $message = 'Selamat datang, Pengguna!';
-                return redirect('/')->with('toast_success', $message);
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return redirect()->route('login')->withErrors([
+                    'username' => 'Role pengguna tidak dikenali. Silakan hubungi admin.',
+                ]);
             }
         }
 

@@ -2,63 +2,6 @@
 
 @section('content')
 
-<style>
-    /* Atur lebar kolom dengan min-width supaya kolom tidak terlalu kecil */
-    .schedule-table th:nth-child(1),
-    .schedule-table td:nth-child(1) {
-        width: 10%;
-        min-width: 60px;
-        /* minimal lebar agar kolom Jam cukup */
-    }
-
-    .schedule-table th:nth-child(2),
-    .schedule-table td:nth-child(2) {
-        width: 40%;
-        min-width: 180px;
-        /* mapel biasanya teks agak panjang */
-    }
-
-    .schedule-table th:nth-child(3),
-    .schedule-table td:nth-child(3) {
-        width: 30%;
-        min-width: 140px;
-    }
-
-    .schedule-table th:nth-child(4),
-    .schedule-table td:nth-child(4) {
-        width: 20%;
-        min-width: 100px;
-    }
-
-    /* Buat teks tetap rapi dan responsif */
-    .schedule-table th,
-    .schedule-table td {
-        vertical-align: middle;
-        white-space: nowrap;
-        /* cegah wrap */
-        overflow: hidden;
-        /* sembunyikan overflow */
-        text-overflow: ellipsis;
-        /* potong dengan ... */
-        padding: 0.5rem 0.75rem;
-        /* beri padding nyaman */
-        font-size: 0.9rem;
-        /* sedikit lebih kecil dan rapi */
-    }
-
-    /* Agar pada layar kecil tetap bisa scroll */
-    .table-responsive {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        /* smooth scroll di iOS */
-    }
-
-    /* Hover effect agar baris tabel lebih jelas */
-    .schedule-table tbody tr:hover {
-        background-color: #f1f1f1;
-    }
-</style>
-
 <h1 class="mb-4">Dashboard Admin</h1>
 
 @if (Auth::check())
@@ -213,7 +156,6 @@
                         @endforeach
                         @endif
                     </tbody>
-
                 </table>
             </div>
         </div>
@@ -223,7 +165,5 @@
 
     </div>
 </div>
-
-
 
 @endsection

@@ -47,7 +47,7 @@ $hariLabel = [1=>'Senin',2=>'Selasa',3=>'Rabu',4=>'Kamis',5=>'Jumat',6=>'Sabtu']
                         <th style="width:90px">Hari</th>
                         <th style="width:80px">Jam</th>
                         <th style="width:140px">Jenis</th>
-                        <th>Mapel – Guru</th>
+                        <th>Mapel dan Guru</th>
                         <th style="width:160px">Ruangan</th>
                         <th style="width:180px">Waktu Aksi</th>
                     </tr>

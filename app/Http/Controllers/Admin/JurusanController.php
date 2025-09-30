@@ -26,8 +26,6 @@ class JurusanController extends Controller
 
     public function store(Request $request)
     {
-        // dd($request->all());
-
         $request->validate([
             'nama_jurusan' => 'required|string|max:255',
             'keterangan' => 'nullable|string|max:500',
@@ -48,23 +46,23 @@ class JurusanController extends Controller
         return view('admin.jurusan.edit', compact('jurusan'));
     }
 
-    public function update(Request $request, $id)
-    {
-        $request->validate([
-            'nama_jurusan' => 'required|string|max:255',
-            'keterangan' => 'nullable|string|max:500',
-        ]);
+        public function update(Request $request, $id)
+        {
+            $request->validate([
+                'nama_jurusan' => 'required|string|max:255',
+                'keterangan' => 'nullable|string|max:500',
+            ]);
 
-        $jurusan = Jurusan::findOrFail($id);
-        $jurusan->update([
-            'nama_jurusan' => $request->nama_jurusan,
-            'keterangan' => $request->keterangan,
-        ]);
+            $jurusan = Jurusan::findOrFail($id);
+            $jurusan->update([
+                'nama_jurusan' => $request->nama_jurusan,
+                'keterangan' => $request->keterangan,
+            ]);
 
 
-        return redirect()->route('admin.jurusan.index')
-            ->with('toast_success', 'Jurusan berhasil diupdate.');
-    }
+            return redirect()->route('admin.jurusan.index')
+                ->with('toast_success', 'Jurusan berhasil diupdate.');
+        }
 
 
     public function destroy($id)

@@ -1,4 +1,4 @@
-@extends('layouts.KepalaSekolah')
+@extends('layouts.kepalaSekolah')
 
 @section('content')
 <div class="container-fluid page-shell"> {{-- shell flex full height --}}
