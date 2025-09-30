@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <title>Admin Dashboard</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <!-- Font Awesome -->
@@ -13,6 +13,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
 
 
 
@@ -376,6 +377,16 @@
                 left: -250px;
                 z-index: 9999;
                 transition: left 0.3s ease;
+                position: fixed;
+                /* pastikan fixed */
+                top: 0;
+                bottom: 0;
+                width: 250px;
+                height: 100dvh;
+            }
+
+            #sidebar.active {
+                left: 0;
             }
 
             table td:last-child {
@@ -391,6 +402,8 @@
                 padding-top: 60px;
                 position: relative;
                 z-index: 1;
+                /* kalau ada bottom nav atau tombol bawah, beri breathing space: */
+                padding-bottom: calc(16px + env(safe-area-inset-bottom));
             }
 
             #content.overlay {
@@ -402,7 +415,7 @@
                 position: fixed;
                 top: 1rem;
                 left: 1rem;
-                z-index: 1200;
+                z-index: 11000;
             }
 
             #sidebar.active #toggleSidebarBtn {
@@ -415,13 +428,13 @@
 
             .sidebar-overlay {
                 position: fixed;
-                top: 0;
-                left: 0;
-                height: 100vh;
+                inset: 0;
+                height: 100dvh;
+                /* ganti 100vh -> 100dvh */
                 width: 100vw;
                 background-color: rgba(0, 0, 0, 0.4);
                 z-index: 1030;
-                /* Lebih rendah dari backdrop modal (1050) */
+                /* di bawah sidebar (9999), di atas content (1) */
                 display: none;
             }
 
@@ -437,6 +450,16 @@
             body.modal-open #toggleSidebarBtn {
                 pointer-events: none;
                 opacity: 0.3;
+            }
+
+            table td:last-child {
+                min-width: 180px;
+            }
+
+            .bottom-nav,
+            .footer-fixed,
+            .logout-bar {
+                padding-bottom: env(safe-area-inset-bottom);
             }
         }
     </style>

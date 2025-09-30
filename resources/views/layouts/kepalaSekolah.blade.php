@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <title>Kepala Sekolah</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <!-- Bootstrap CSS CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
@@ -260,6 +260,8 @@
                 padding-top: 60px;
                 position: relative;
                 z-index: 1;
+                /* ruang ekstra bawah untuk iOS bar & tombol logout */
+                padding-bottom: calc(16px + env(safe-area-inset-bottom));
             }
 
             #content.overlay {
@@ -271,7 +273,7 @@
                 position: fixed;
                 top: 1rem;
                 left: 1rem;
-                z-index: 1200;
+                z-index: 11000;
             }
 
             #sidebar.active #toggleSidebarBtn {
@@ -288,7 +290,7 @@
                 left: 0;
                 height: 100vh;
                 width: 100vw;
-                background-color: rgba(0, 0, 0, 0.4);
+                background-color: rgba(0, 0, 0, .4);
                 z-index: 1030;
                 /* Lebih rendah dari backdrop modal (1050) */
                 display: none;
@@ -306,6 +308,18 @@
             body.modal-open #toggleSidebarBtn {
                 pointer-events: none;
                 opacity: 0.3;
+            }
+
+            /* Kolom aksi tabel lebih lebar */
+            table td:last-child {
+                min-width: 180px;
+            }
+
+            /* Komponen bawah (logout bar / bottom nav) aman di iOS */
+            .bottom-nav,
+            .footer-fixed,
+            .logout-bar {
+                padding-bottom: env(safe-area-inset-bottom);
             }
         }
 

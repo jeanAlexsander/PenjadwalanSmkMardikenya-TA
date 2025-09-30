@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <title>Dashboard Guru</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     {{-- jQuery (WAJIB sebelum toastr 2.1.4) --}}
@@ -208,9 +208,6 @@
             cursor: pointer;
         }
 
-
-
-
         @media (max-width: 768px) {
             #sidebar {
                 left: -250px;
@@ -227,6 +224,8 @@
                 padding-top: 60px;
                 position: relative;
                 z-index: 1;
+                /* aman untuk iOS home indicator & tombol bawah */
+                padding-bottom: calc(16px + env(safe-area-inset-bottom));
             }
 
             #content.overlay {
@@ -238,7 +237,7 @@
                 position: fixed;
                 top: 1rem;
                 left: 1rem;
-                z-index: 1200;
+                z-index: 11000;
             }
 
             #sidebar.active #toggleSidebarBtn {
@@ -251,13 +250,13 @@
 
             .sidebar-overlay {
                 position: fixed;
-                top: 0;
-                left: 0;
-                height: 100vh;
+                inset: 0;
                 width: 100vw;
+                height: 100dvh;
+                /* ganti 100vh -> 100dvh */
                 background-color: rgba(0, 0, 0, 0.4);
                 z-index: 1030;
-                /* Lebih rendah dari backdrop modal (1050) */
+                /* di atas content, di bawah sidebar */
                 display: none;
             }
 
@@ -273,6 +272,17 @@
             body.modal-open #toggleSidebarBtn {
                 pointer-events: none;
                 opacity: 0.3;
+            }
+
+            table td:last-child {
+                min-width: 180px;
+            }
+
+            /* Komponen bawah (mis. bar logout bawah) aman di iOS */
+            .bottom-nav,
+            .footer-fixed,
+            .logout-bar {
+                padding-bottom: env(safe-area-inset-bottom);
             }
         }
 
