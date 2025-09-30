@@ -19,8 +19,9 @@
 
     <style>
         body {
-            min-height: 100vh;
-            display: flex;
+            display: block;
+            min-height: 100dvh;
+            overflow-x: hidden;
         }
 
         #sidebar {
