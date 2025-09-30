@@ -50,7 +50,7 @@
             align-items: center;
             height: 44px;
             padding: 0 12px;
-            gap: 4  px;
+            gap: 4 px;
             /* dari 12px jadi 8px atau bahkan 6px */
         }
 
@@ -464,11 +464,11 @@
 </head>
 
 <body>
-    <nav id="sidebar" class="d-flex flex-column p-3">
+    <nav id="sidebar" class="no-print d-flex flex-column p-3">
         {{-- Tombol toggle sidebar (mobile) --}}
         <div class="d-flex align-items-center justify-content-start mb-3">
-            <button id="toggleSidebarBtn" aria-label="Toggle sidebar">☰</button>
-            <span class="text-white fs-5 d-md-none d-inline-block">Admin</span>
+            <button id="toggleSidebarBtn" class="no-print" aria-label="Toggle sidebar">☰</button>
+            <span class="no-print text-white fs-5 d-md-none d-inline-block">Admin</span>
         </div>
 
         {{-- Tulisan Admin (desktop) --}}
