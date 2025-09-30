@@ -21,7 +21,6 @@
         body {
             min-height: 100vh;
             display: flex;
-            overflow-x: hidden;
         }
 
         #sidebar {
@@ -51,7 +50,7 @@
             align-items: center;
             height: 44px;
             padding: 0 12px;
-            gap: 8px;
+            gap: 4  px;
             /* dari 12px jadi 8px atau bahkan 6px */
         }
 
@@ -66,8 +65,6 @@
             width: 100%;
             padding: 20px;
             transition: margin-left 0.3s ease;
-            max-width: 100%;
-            overflow-x: hidden;
         }
 
         #content.expanded {

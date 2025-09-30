@@ -47,7 +47,7 @@
             align-items: center;
             height: 44px;
             padding: 0 12px;
-            gap: 8px;
+            gap: 4px;
             /* dari 12px jadi 8px atau bahkan 6px */
         }
 
