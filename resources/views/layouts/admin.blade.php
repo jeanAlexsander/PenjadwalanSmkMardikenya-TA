@@ -19,9 +19,8 @@
 
     <style>
         body {
-            display: block;
-            min-height: 100dvh;
-            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
         }
 
         #sidebar {
@@ -375,12 +374,6 @@
                 left: -250px;
                 z-index: 9999;
                 transition: left 0.3s ease;
-                position: fixed;
-                /* pastikan fixed */
-                top: 0;
-                bottom: 0;
-                width: 250px;
-                height: 100dvh;
             }
 
             #sidebar.active {
