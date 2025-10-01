@@ -114,7 +114,7 @@ class AdminController extends Controller
     private function hitungJam(int $jamKe): array
     {
         $waktu  = now()->setTime(7, 0, 0);
-        $durasi = [45, 40, 40, 40, 30, 40, 40, 40, 35, 40, 40, 40, 40]; // 0..12
+        $durasi = [30, 40, 40, 40, 30, 40, 40, 40, 50, 40, 40, 40, 40]; // 0..12
 
         $mulai = null;
         $selesai = null;

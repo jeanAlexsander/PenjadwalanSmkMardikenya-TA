@@ -35,7 +35,7 @@
                         <td>{{ ($ruangan->firstItem() ?? 0) + $index }}</td>
                         <td>{{ $r->nama }}</td>
                         <td>{{ $r->kapasitas }}</td>
-                        <td style="white-space: normal;">{{ $r->keterangan }}</td>
+                        <td style="white-space: normal;">{{ $r->keterangan ?? '-'}}</td>
                         <td>
                             {{-- Tombol Aksi --}}
                             <a href="#"

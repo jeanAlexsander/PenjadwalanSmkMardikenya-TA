@@ -162,7 +162,7 @@ class PenjadwalanController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'hari'     => 'required|integer|min:1|max:6',     // 1=Senin .. 6=Sabtu
+            'hari'     => 'required|integer|min:1|max:5',     // 1=Senin .. 5=Jumat
             'jam'      => 'required|integer|min:0|max:12',    // jam-ke
             'kelas_id' => 'required|exists:kelas,id',
 
@@ -251,7 +251,7 @@ class PenjadwalanController extends Controller
         $jadwal = JadwalPelajaran::findOrFail($id);
 
         $data = $request->validate([
-            'hari'     => 'required|integer|min:1|max:6',
+            'hari'     => 'required|integer|min:1|max:5',
             'jam'      => 'required|integer|min:0|max:12',
             'kelas_id' => 'required|exists:kelas,id',
 
@@ -561,7 +561,7 @@ class PenjadwalanController extends Controller
     public function dashboard()
     {
         // Map hari EN -> angka 1..6
-        $map = ['Monday' => 1, 'Tuesday' => 2, 'Wednesday' => 3, 'Thursday' => 4, 'Friday' => 5, 'Saturday' => 6];
+        $map = ['Monday' => 1, 'Tuesday' => 2, 'Wednesday' => 3, 'Thursday' => 4, 'Friday' => 5];
         $todayEn = now()->format('l');
         $hariNum = $map[$todayEn] ?? 1;
 
@@ -622,7 +622,7 @@ class PenjadwalanController extends Controller
     public function generate(Request $req, \App\Services\JadwalGeneratorLegacy $generator)
     {
         $mode = $req->input('mode', 'global');
-        $ops  = ['alpha' => 10, 'beta' => 0.25];
+        $ops  = ['alpha' => 10, 'beta' => 0.20];
 
         $kelasIds = collect($req->input('kelas_ids', []))
             ->map(fn($v) => (int)$v)->filter()->unique()->values()->all();
@@ -657,7 +657,7 @@ class PenjadwalanController extends Controller
 
         // simpan preview
         $key = 'ga_preview:' . ($req->user()?->id ?? 'guest') . ':' . $mode . ':' . Str::uuid();
-        Cache::put($key, $rows->all(), now()->addHours(6));
+        Cache::put($key, $rows->all(), now()->addHours(5));
 
         // meta + simpan fokus agar “stay”
         $meta = ['mode' => $mode, 'kelas_ids' => $mode === 'kelas' ? [$kelasFocusId] : []];

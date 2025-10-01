@@ -10,9 +10,18 @@
         // Normalisasi preview dari controller -> aman walau null
         $previewRowsCol = collect($previewRows ?? []);
         $hasPreview = $previewRowsCol->isNotEmpty();
-        $mapHariNum = ['Senin'=>1,'Selasa'=>2,'Rabu'=>3,'Kamis'=>4,'Jumat'=>5];
+
+        // Mapping hari
+        $mapHariNum = [
+        'Senin' => 1,
+        'Selasa' => 2,
+        'Rabu' => 3,
+        'Kamis' => 4,
+        'Jumat' => 5,
+        ];
         $hariList = ['Senin','Selasa','Rabu','Kamis','Jumat'];
 
+        // Hitung waktu jam pelajaran
         if (!function_exists('hitungJam')) {
         function hitungJam($jamKe) {
         $waktu = \Carbon\Carbon::createFromTime(7, 0);
@@ -23,19 +32,32 @@
         8 => 50, // Istirahat 2
         9 => 40, 10 => 40, 11 => 40, 12 => 40,
         ];
+
         for ($i = 0; $i <= 12; $i++) {
             $mulai=$waktu->copy();
             $waktu->addMinutes($durasi[$i]);
             if ($i === $jamKe) {
-            return ['mulai'=>$mulai->format('H:i'),'selesai'=>$waktu->format('H:i')];
-            }
-            }
-            return ['mulai'=>'00:00','selesai'=>'00:00'];
+            return [
+            'mulai' => $mulai->format('H:i'),
+            'selesai' => $waktu->format('H:i'),
+            ];
             }
             }
 
-            $jumlahJamPerHari = ['Senin'=>12,'Selasa'=>12,'Rabu'=>12,'Kamis'=>12,'Jumat'=>10];
+            return ['mulai' => '00:00', 'selesai' => '00:00'];
+            }
+            }
+
+            // Jumlah jam per hari & label Jam 0
+            $jumlahJamPerHari = [
+            'Senin' => 12,
+            'Selasa' => 12,
+            'Rabu' => 12,
+            'Kamis' => 12,
+            'Jumat' => 10,
+            ];
             $maxJam = max($jumlahJamPerHari);
+
             $jam0Labels = [
             1 => 'Upacara',
             2 => 'Literasi Agama',
@@ -69,7 +91,6 @@
                 </div>
 
                 <div class="col-md-auto d-flex gap-2">
-
                     {{-- Generate PER KELAS --}}
                     <form action="{{ route('admin.penjadwalan.generate') }}" method="POST" class="d-inline">
                         @csrf
@@ -139,7 +160,6 @@
             </div>
             @endif
 
-
             @if (!$kelasTerpilih)
             <div class="alert alert-warning text-center">
                 Silakan pilih kelas terlebih dahulu sebelum menambahkan jadwal.
@@ -158,45 +178,6 @@
                             <th>Jumat</th>
                         </tr>
                     </thead>
-
-                    @php
-                    // Palet warna pastel (aman utk teks gelap)
-                    $MAPEL_PALETTE = [
-                    '#E3F2FD', '#E8F5E9', '#FFF3E0', '#F3E5F5', '#E0F7FA',
-                    '#FCE4EC', '#F1F8E9', '#FFFDE7', '#EDE7F6', '#E0E0E0',
-                    ];
-
-                    // Hindari redeclare saat view di-include berulang
-                    if (!function_exists('colorForMapel')) {
-                    function colorForMapel(?string $mapel, array $palette): string {
-                    if (!$mapel || strtoupper($mapel) === 'MAPEL KOSONG') return '#FFFFFF';
-                    $key = mb_strtolower(trim($mapel));
-                    $idx = abs(crc32($key)) % count($palette);
-                    return $palette[$idx];
-                    }
-                    }
-
-                    if (!function_exists('colorForJenis')) {
-                    function colorForJenis(?string $jenis): ?string {
-                    return match ($jenis) {
-                    'UPACARA' => '#D1E7DD', // hijau lembut
-                    'EKSKUL' => '#CCE5FF', // biru lembut
-                    'KEGIATAN' => '#FFE5D0', // oranye lembut
-                    default => null,
-                    };
-                    }
-                    }
-
-                    $mapHariNum = ['Senin'=>1,'Selasa'=>2,'Rabu'=>3,'Kamis'=>4,'Jumat'=>5];
-                    $jam0Labels = [
-                    1 => 'Upacara',
-                    2 => 'Kebersihan',
-                    3 => 'Literasi Keagamaan',
-                    4 => 'Literasi Umum',
-                    5 => 'Senam & Kebersihan',
-                    ];
-                    @endphp
-
 
                     <tbody id="tabelJadwal">
                         @for ($i = 0; $i <= $maxJam; $i++)

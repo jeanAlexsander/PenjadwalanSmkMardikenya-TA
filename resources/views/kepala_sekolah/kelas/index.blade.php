@@ -25,7 +25,6 @@
                     <tr class="text-center">
                         {{-- nomor lanjut per halaman --}}
                         <td>{{ ($kelases->firstItem() ?? 0) + $index }}</td>
-
                         <td>{{ $kls->nama_kelas }}</td>
                         <td>{{ $kls->jurusan->nama_jurusan ?? '-' }}</td>
                         <td>{{ $kls->tingkat }}</td>

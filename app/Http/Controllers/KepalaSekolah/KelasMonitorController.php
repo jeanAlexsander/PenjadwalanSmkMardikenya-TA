@@ -13,7 +13,7 @@ class KelasMonitorController extends Controller
 {
     public function index(Request $request)
     {
-        $perPage = (int) $request->query('per_page', 1);
+        $perPage = (int) $request->query('per_page', 14);
 
         // Tabel utama (kepala sekolah) — dipaginasi
         $kelases = Kelas::with(['jurusan', 'waliKelas.user'])
