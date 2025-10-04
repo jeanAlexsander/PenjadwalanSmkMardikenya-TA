@@ -83,10 +83,10 @@
                     </div>
                     @endif
 
-                    <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div class="d-flex align-items-center mt-3">
                         <!--<a href="{{ route('password.request') }}" class="text-decoration-none">Lupa Password?</a>-->
 
-                        <button type="submit" class="btn btn-success text-white">
+                        <button type="submit" class="btn btn-success text-white ms-auto">
                             Masuk
                         </button>
                     </div>

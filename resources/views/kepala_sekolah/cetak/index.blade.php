@@ -88,10 +88,6 @@
                         @endif
                         @endfor
                 </tbody>
-
-
-
-
             </table>
         </div>
     </div>
