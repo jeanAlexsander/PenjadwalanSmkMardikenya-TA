@@ -333,7 +333,7 @@ class GAEngine
         return ['jadwal' => array_values($childJadwal)];
     }
 
-    private function mutasi(array &$individu, float $prob = 0.2): void
+    private function mutasi(array &$individu, float $prob = 0.25): void
     {
         if (mt_rand() / mt_getrandmax() > $prob) return;
 
@@ -527,7 +527,7 @@ class GAEngine
         $generasiMax  = (int)($ops['generations'] ?? 50);
         $elitSize     = (int)($ops['elit']        ?? 2);
         $pCrossover   = (float)($ops['pCrossover'] ?? 0.9);
-        $pMutasi      = (float)($ops['pMutasi']     ?? 0.30);
+        $pMutasi      = (float)($ops['pMutasi']     ?? 0.25);
         $tourSize     = (int)($ops['tourSize']    ?? 3);
 
         $populasi = [];

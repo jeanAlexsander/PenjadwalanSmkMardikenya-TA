@@ -4,7 +4,7 @@
             <form method="POST" action="{{ route('admin.kebutuhan-mapel-kelas.store') }}">
                 @csrf
                 <div class="modal-header">
-                    <h5 class="modal-title">Tambah Kebutuhan Mapel Kelas</h5>
+                    <h5 class="modal-title">Tambah Kebutuhan Kelas Mapel</h5>
                 </div>
 
                 <div class="modal-body">
