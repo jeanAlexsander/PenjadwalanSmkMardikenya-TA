@@ -40,11 +40,14 @@
                         <td>{{ $item->alamat ?? '-' }}</td>
 
                         <td>
-                            <button class="btn btn-sm btn-warning btn-edit-guru"
+                            <button
+                                class="btn btn-sm btn-warning btn-edit-guru"
                                 data-id="{{ $item->id }}"
                                 data-nama="{{ $item->user->name ?? $item->name ?? '' }}"
                                 data-email="{{ $item->user->email ?? $item->email ?? '' }}"
                                 data-alamat="{{ $item->alamat ?? '' }}"
+                                data-role="{{ $item->user->role ?? 'guru' }}" {{-- 'guru' atau 'kepala_sekolah' --}}
+                                data-update-url="{{ route('admin.guru.update', $item->id) }}"
                                 data-reset-url="{{ route('admin.guru.resetPassword', $item->id) }}"
                                 data-bs-toggle="modal"
                                 data-bs-target="#modalEditGuru">
@@ -111,11 +114,17 @@
 @push('scripts')
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        // ========= SCRIPT EDIT =========
+        // ========= ELEMENT REFERENCES =========
         const editButtons = document.querySelectorAll('.btn-edit-guru');
         const formEdit = document.getElementById('formEditGuru');
         const resetPasswordBtn = document.querySelector('#modalEditGuru .btn-open-reset-password');
 
+        const selectRole = document.getElementById('edit_role'); // <select name="role" id="edit_role">
+        const optKepsek = document.getElementById('opt_kepala_sekolah'); // <option id="opt_kepala_sekolah" value="kepala_sekolah">
+        const kepsekExistsFlag = document.getElementById('kepsek_exists_flag'); // <input type="hidden" id="kepsek_exists_flag" value="1|0">
+        const kepsekExists = (kepsekExistsFlag?.value === '1');
+
+        // ========= SCRIPT RESET (dari kamu) =========
         document.querySelectorAll('.btn-buka-modal-reset').forEach(button => {
             button.addEventListener('click', function() {
                 const url = this.dataset.url;
@@ -125,12 +134,16 @@
             });
         });
 
+        // ========= SCRIPT EDIT (disesuaikan: role + URL dinamis) =========
         editButtons.forEach(button => {
             button.addEventListener('click', function() {
                 const id = this.dataset.id;
                 const nama = this.dataset.nama || '';
                 const email = this.dataset.email || '';
                 const alamat = this.dataset.alamat || '';
+                const role = (this.dataset.role || 'guru'); // 'guru' | 'kepala_sekolah'
+                const updateUrl = this.dataset.updateUrl || `/admin/guru/${id}`;
+                const resetUrl = this.dataset.resetUrl || `/admin/guru/${id}/reset-password`;
 
                 // Isi form edit guru
                 document.getElementById('edit_id').value = id;
@@ -138,18 +151,43 @@
                 document.getElementById('edit_email').value = email;
                 document.getElementById('edit_alamat').value = alamat;
 
-                // Set action form untuk PUT ke /admin/guru/{id}
-                formEdit.setAttribute('action', `/admin/guru/${id}`);
+                // Set action form PUT ke route update
+                formEdit.setAttribute('action', updateUrl);
 
-                // Set tombol reset password (dalam modal edit)
+                // Set tombol reset password di modal edit
                 if (resetPasswordBtn) {
-                    resetPasswordBtn.setAttribute('data-url', `/admin/guru/${id}/reset-password`);
+                    resetPasswordBtn.setAttribute('data-url', resetUrl);
                     resetPasswordBtn.setAttribute('data-nama', nama);
                 }
+
+                // === KUNCI: set dropdown ROLE sesuai data & UX guard ===
+                // Jika sudah ada kepala sekolah & yang diedit BUKAN kepala sekolah → disable opsi kepsek (UX only)
+                if (optKepsek) {
+                    if (kepsekExists && role !== 'kepala_sekolah') {
+                        optKepsek.setAttribute('disabled', 'disabled');
+                        optKepsek.textContent = 'Kepala Sekolah (sudah ada)';
+                    } else {
+                        optKepsek.removeAttribute('disabled');
+                        optKepsek.textContent = 'Kepala Sekolah';
+                    }
+                }
+
+                // Set value select
+                if (selectRole) {
+                    selectRole.value = role;
+                    // Fallback kalau value belum ke-set (mis. mismatch string)
+                    if (selectRole.value !== role) {
+                        [...selectRole.options].forEach(o => o.selected = (o.value === role));
+                    }
+                }
+
+                // (Opsional) update judul modal
+                const modalTitle = document.querySelector('#modalEditGuru .modal-title');
+                if (modalTitle) modalTitle.textContent = 'Edit Guru: ' + nama;
             });
         });
 
-        // ========= SCRIPT DELETE =========
+        // ========= SCRIPT DELETE (punyamu) =========
         const deleteButtons = document.querySelectorAll('[data-bs-target="#modalHapusGuru"]');
         const formHapus = document.getElementById("formHapusGuru");
         const namaGuru = document.getElementById("namaGuruHapus");
@@ -163,7 +201,7 @@
             });
         });
 
-        // ========= RESET PASSWORD =========
+        // ========= RESET PASSWORD via fetch (punyamu) =========
         const confirmResetModal = document.getElementById('modalConfirmResetPassword');
         const spanNamaGuru = document.getElementById('namaGuruReset');
         const btnKonfirmasiReset = document.getElementById('btnKonfirmasiReset');
@@ -207,14 +245,35 @@
         if (window.tampilModalTambahGuru) {
             new bootstrap.Modal(document.getElementById('modalTambahGuru')).show();
         }
+
         if (window.tampilModalEditGuru && window.editGuruData) {
             const modalEdit = new bootstrap.Modal(document.getElementById('modalEditGuru'));
             modalEdit.show();
+
             document.getElementById('edit_id').value = window.editGuruData.id;
             document.getElementById('edit_nama').value = window.editGuruData.name;
             document.getElementById('edit_email').value = window.editGuruData.email;
             document.getElementById('edit_alamat').value = window.editGuruData.alamat;
             document.getElementById('formEditGuru').action = `/admin/guru/${window.editGuruData.id}`;
+
+            // Saat validasi gagal, pastikan role juga ikut ter-set kembali
+            if (selectRole) {
+                const roleFromOld = window.editGuruData.role || 'guru';
+                // UX guard ulang ketika re-open via error
+                if (optKepsek) {
+                    if (kepsekExists && roleFromOld !== 'kepala_sekolah') {
+                        optKepsek.setAttribute('disabled', 'disabled');
+                        optKepsek.textContent = 'Kepala Sekolah (sudah ada)';
+                    } else {
+                        optKepsek.removeAttribute('disabled');
+                        optKepsek.textContent = 'Kepala Sekolah';
+                    }
+                }
+                selectRole.value = roleFromOld;
+                if (selectRole.value !== roleFromOld) {
+                    [...selectRole.options].forEach(o => o.selected = (o.value === roleFromOld));
+                }
+            }
         }
     });
 </script>

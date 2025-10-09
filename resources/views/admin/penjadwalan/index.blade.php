@@ -119,7 +119,12 @@
                         <input type="hidden" name="current_kelas_nama" value="{{ $kelasTerpilih->nama_kelas }}">
                         @endif
 
-                        <button type="submit" class="btn btn-outline-secondary" title="Generate otomatis untuk semua kelas (global)">
+                        <button type="submit"
+                            class="btn btn-outline-secondary"
+                            {{ (!$kelasTerpilih || $isLocked) ? 'disabled' : '' }}
+                            title="{{ $kelasTerpilih
+                            ? ($isLocked ? 'Beberapa jadwal sudah terkunci. Reset dulu untuk generate ulang.' : 'Generate otomatis untuk semua kelas (global)')
+                            : 'Pilih kelas terlebih dahulu' }}">
                             <i class="fas fa-globe me-1"></i> Generate Global
                         </button>
                     </form>

@@ -19,7 +19,7 @@
 
     <style>
         body {
-            min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
         }
 
@@ -28,7 +28,7 @@
             max-width: 250px;
             background: #343a40;
             color: white;
-            height: 100vh;
+            height: 100dvh;
             position: fixed;
             top: 0;
             left: 0;
@@ -347,7 +347,7 @@
         }
 
         .page-shell {
-            min-height: 95vh;
+            min-height: 95dvh;
             /* atau calc(100vh - 56px) jika ada navbar fixed tinggi 56px */
             display: flex;
             flex-direction: column;
@@ -490,7 +490,7 @@
             <li>
                 <a href="{{ route('admin.guru.index') }}"
                     class="nav-link sidebar-link {{ request()->routeIs('admin.guru.*') ? 'active' : 'text-white' }}">
-                    <i class="fas fa-chalkboard-teacher me-2"></i>
+                    <i class="fas fa-users me-2"></i>
                     <span class="menu-text">Data Guru</span>
                 </a>
             </li>
@@ -557,8 +557,6 @@
                     <span class="menu-text">Profil</span>
                 </a>
             </li>
-
-
             <li class="logout-item">
                 <a href="{{ route('logout') }}"
                     onclick="event.preventDefault(); document.getElementById('logout-form').submit();"

@@ -8,6 +8,12 @@
                 <h5 class="modal-title">Tambah Guru</h5>
             </div>
             <div class="modal-body">
+
+                @php
+                // Cek apakah sudah ada kepala sekolah aktif
+                $kepsekExists = \App\Models\User::where('role','kepala_sekolah')->exists();
+                @endphp
+
                 {{-- Nama --}}
                 <div class="mb-3">
                     <label for="name" class="form-label">Nama</label>
@@ -41,6 +47,22 @@
                     @enderror
                 </div>
 
+                {{-- Role --}}
+                <div class="mb-3">
+                    <label for="role" class="form-label">Peran</label>
+                    <select name="role" id="role" class="form-select @error('role') is-invalid @enderror" required>
+                        <option value="guru" {{ old('role','guru')==='guru' ? 'selected' : '' }}>Guru</option>
+                        <option value="kepala_sekolah"
+                            {{ old('role')==='kepala_sekolah' ? 'selected' : '' }}
+                            {{ $kepsekExists ? 'disabled' : '' }}>
+                            Kepala Sekolah {{ $kepsekExists ? '(sudah ada)' : '' }}
+                        </option>
+                    </select>
+                    @error('role')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
                 {{-- Jenis Kelamin --}}
                 <div class="mb-3">
                     <label for="jenis_kelamin" class="form-label">Jenis Kelamin</label>
@@ -55,15 +77,17 @@
                     @enderror
                 </div>
 
-                {{-- Alamat --}}
+                {{-- Alamat (opsional) --}}
                 <div class="mb-3">
                     <label for="alamat" class="form-label">Alamat</label>
                     <textarea class="form-control @error('alamat') is-invalid @enderror"
-                        id="alamat" name="alamat" rows="3" placeholder="Masukkan alamat guru" required>{{ old('alamat') }}</textarea>
+                        id="alamat" name="alamat" rows="3" placeholder="Masukkan alamat guru (opsional)">{{ old('alamat') }}</textarea>
                     @error('alamat')
                     <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
+
+
             </div>
             <div class="modal-footer border-0 pt-0">
                 <button type="button" class="btn btn-secondary border" data-bs-dismiss="modal">

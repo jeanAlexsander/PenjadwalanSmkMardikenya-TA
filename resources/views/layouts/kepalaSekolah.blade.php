@@ -16,7 +16,7 @@
 
     <style>
         body {
-            min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
         }
 
@@ -25,7 +25,7 @@
             max-width: 250px;
             background: #343a40;
             color: white;
-            height: 100vh;
+            height: 100dvh;
             position: fixed;
             top: 0;
             left: 0;
@@ -222,7 +222,7 @@
         }
 
         .page-shell {
-            min-height: 95vh;
+            min-height: 95dvh;
             /* atau calc(100vh - 56px) jika ada navbar fixed tinggi 56px */
             display: flex;
             flex-direction: column;
@@ -354,7 +354,7 @@
                 position: fixed;
                 top: 0;
                 left: 0;
-                height: 100vh;
+                height: 100dvh;
                 width: 100vw;
                 background-color: rgba(0, 0, 0, .4);
                 z-index: 1030;
@@ -431,7 +431,7 @@
             <li>
                 <a href="{{ route('kepala_sekolah.guru.index') }}"
                     class="nav-link sidebar-link {{ request()->routeIs('kepala_sekolah.guru.*') ? 'active' : 'text-white' }}">
-                    <i class="fas fa-chalkboard-teacher me-2"></i>
+                    <i class="fas fa-users me-2"></i>
                     <span class="menu-text">Data Guru</span>
                 </a>
             </li>
@@ -454,6 +454,13 @@
                     class="nav-link sidebar-link {{ request()->routeIs('kepala_sekolah.penjadwalan.*') ? 'active' : 'text-white' }}">
                     <i class="fas fa-calendar-alt me-2"></i>
                     <span class="menu-text">Penjadwalan Kelas</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('kepala_sekolah.jadwal.index') }}"
+                    class="nav-link sidebar-link {{ request()->routeIs('kepala_sekolah.jadwal.*') ? 'active' : 'text-white' }}">
+                    <i class="fas fa-chalkboard-teacher me-2"></i>
+                    <span class="menu-text">Jadwal Mengajar</span>
                 </a>
             </li>
             <li>

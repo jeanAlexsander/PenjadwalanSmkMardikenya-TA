@@ -32,6 +32,7 @@ use App\Http\Controllers\KepalaSekolah\CetakController;
 use App\Http\Controllers\KepalaSekolah\JurusanMonitorController;
 use App\Http\Controllers\KepalaSekolah\KelasMonitorController;
 use App\Http\Controllers\KepalaSekolah\MapelMonitorController;
+use App\Http\Controllers\KepalaSekolah\JadwalKepalaSekolahController;
 
 Route::get('/', function () {
     if (!Auth::check()) {
@@ -153,4 +154,5 @@ Route::middleware(['auth', 'role:kepala_sekolah'])->group(function () {
     Route::get('/kepala_sekolah/kelas', [KelasMonitorController::class, 'index'])->name('kepala_sekolah.kelas.index');
     Route::get('/kepala_sekolah/jurusan', [JurusanMonitorController::class, 'index'])->name('kepala_sekolah.jurusan.index');
     Route::get('/kepala_sekolah/mapel', [MapelMonitorController::class, 'index'])->name('kepala_sekolah.mapel.index');
+    Route::get('/kepala_sekolah/jadwal', [JadwalKepalaSekolahController::class, 'index'])->name('kepala_sekolah.jadwal.index');
 });

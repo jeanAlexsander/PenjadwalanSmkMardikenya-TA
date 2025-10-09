@@ -17,7 +17,7 @@
 
     <style>
         body {
-            min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
         }
 
@@ -26,7 +26,7 @@
             max-width: 250px;
             background: #343a40;
             color: white;
-            height: 100vh;
+            height: 100dvh;
             position: fixed;
             top: 0;
             left: 0;

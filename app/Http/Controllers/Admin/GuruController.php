@@ -7,6 +7,7 @@ use App\Models\Guru;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -35,20 +36,37 @@ class GuruController extends Controller
                 'nip'            => 'required|string|max:50|unique:gurus,nip',
                 'jenis_kelamin'  => 'required|in:L,P',
                 'alamat'         => 'nullable|string',
+                'role'           => ['required', Rule::in(['guru', 'kepala_sekolah'])],
             ], [
-                'email.unique' => 'Email sudah terdaftar untuk guru lain.',
-                'nip.unique'   => 'NIP sudah terdaftar untuk guru lain.',
+                'email.unique'   => 'Email sudah terdaftar untuk guru lain.',
+                'nip.unique'     => 'NIP sudah terdaftar untuk guru lain.',
+                'role.in'        => 'Peran tidak valid.',
             ]);
+
+            // Batasi: hanya 1 kepala sekolah aktif
+            if ($request->role === 'kepala_sekolah' && \App\Models\User::where('role', 'kepala_sekolah')->exists()) {
+                return back()->withInput()
+                    ->withErrors(['role' => 'Kepala sekolah sudah ada. Turunkan dahulu sebelum menunjuk yang baru.'])
+                    ->with('tampilModalTambahGuru', true);
+            }
+
+            // Pastikan username unik (jaga-jaga)
+            $username = $request->nip ?: $request->email;
+            if (\App\Models\User::where('username', $username)->exists()) {
+                return back()->withInput()
+                    ->withErrors(['nip' => 'Username sudah dipakai. Gunakan NIP unik atau cek email.'])
+                    ->with('tampilModalTambahGuru', true);
+            }
 
             DB::beginTransaction();
 
-            $user = User::create([
-                'username' => $request->nip ?? $request->email,
+            $user = \App\Models\User::create([
+                'username' => $username,
                 'password' => Hash::make('guru123'),
-                'role'     => 'guru',
+                'role'     => $request->role, // ← gunakan role terpilih
             ]);
 
-            Guru::create([
+            \App\Models\Guru::create([
                 'user_id'        => $user->id,
                 'nip'            => $request->nip,
                 'name'           => $request->name,
@@ -61,13 +79,13 @@ class GuruController extends Controller
 
             return redirect()->route('admin.guru.index')->with('toast_success', 'Guru berhasil ditambahkan.');
         } catch (ValidationException $e) {
-            return redirect()->back()
+            return back()
                 ->withErrors($e->validator)
                 ->withInput()
                 ->with('tampilModalTambahGuru', true);
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->with('toast_error', 'Terjadi kesalahan saat menambahkan guru.');
+            return back()->with('toast_error', 'Terjadi kesalahan saat menambahkan guru.');
         }
     }
 
@@ -84,21 +102,43 @@ class GuruController extends Controller
                 'name'   => 'required|string|max:255',
                 'email'  => 'required|email|unique:gurus,email,' . $guru->id,
                 'alamat' => 'nullable|string',
+                // tambahkan validasi role (boleh kirim dari form edit)
+                'role'   => ['required', Rule::in(['guru', 'kepala_sekolah'])],
             ], [
                 'email.unique' => 'Email sudah terdaftar untuk guru lain.',
+                'role.in'      => 'Peran tidak valid.',
             ]);
 
             DB::beginTransaction();
 
+            // Update data guru
             $guru->update([
                 'name'   => $request->name,
                 'email'  => $request->email,
                 'alamat' => $request->alamat,
             ]);
 
+            // ====== Kelola perubahan role secara aman ======
+            $targetRole   = $request->role;
+            $currentRole  = $guru->user->role;
+
+            if ($targetRole !== $currentRole) {
+                if ($targetRole === 'kepala_sekolah') {
+                    // Demote kepala sekolah lama (jika ada), lalu promote user ini → atomik
+                    // lockForUpdate untuk mencegah race condition
+                    \App\Models\User::where('role', 'kepala_sekolah')->lockForUpdate()->update(['role' => 'guru']);
+                    $guru->user()->update(['role' => 'kepala_sekolah']);
+                } else {
+                    // targetRole = 'guru' → cukup update role user ini
+                    $guru->user()->update(['role' => 'guru']);
+                }
+            }
+
             DB::commit();
 
-            return redirect()->route('admin.guru.index')->with('toast_success', 'Data guru berhasil diperbarui.');
+            return redirect()
+                ->route('admin.guru.index')
+                ->with('toast_success', 'Data guru berhasil diperbarui.');
         } catch (\Illuminate\Validation\ValidationException $e) {
             return redirect()->back()
                 ->withErrors($e->validator)
@@ -114,7 +154,6 @@ class GuruController extends Controller
                 ->withInput();
         }
     }
-
 
     public function destroy($id)
     {
