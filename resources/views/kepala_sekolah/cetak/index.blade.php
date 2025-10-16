@@ -57,14 +57,14 @@
                     @for ($jam = 0; $jam <= 12; $jam++)
                         @if ($jam===4)
                         <tr class="table-secondary">
-                        <td><strong>Istirahat 1<br><small>09:45 - 10:15</small></strong></td>
+                        <td><strong>Istirahat 1<br><small>09:30 - 10:00</small></strong></td>
                         @foreach (['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'] as $hari)
                         <td class="text-center text-muted">-</td>
                         @endforeach
                         </tr>
                         @elseif ($jam === 8)
                         <tr class="table-secondary">
-                            <td><strong>Istirahat 2<br><small>12:15 - 12:50</small></strong></td>
+                            <td><strong>Istirahat 2<br><small>12:00 - 12:50</small></strong></td>
                             @foreach (['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'] as $hari)
                             <td class="text-center text-muted">-</td>
                             @endforeach

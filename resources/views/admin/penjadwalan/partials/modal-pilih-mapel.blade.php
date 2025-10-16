@@ -40,6 +40,25 @@
                         @endforelse
                     </div>
 
+                    {{-- Tambahkan ini --}}
+                    <hr>
+                    <h6 class="text-muted mt-3">Non-Mata Pelajaran</h6>
+                    @foreach ([
+                    'ekskul' => 'Ekskul',
+                    ] as $key => $nama)
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio"
+                            id="nonmapel_{{ $key }}"
+                            name="guru_mata_pelajaran_id"
+                            value="nonmapel_{{ $key }}"
+                            data-jenis="non-akademik">
+                        <label class="form-check-label" for="nonmapel_{{ $key }}">
+                            {{ $nama }}
+                            <span class="badge bg-info text-dark">Non Mapel</span>
+                        </label>
+                    </div>
+                    @endforeach
+
                     <div class="mb-3 mt-3">
                         <label for="ruangan_id" class="form-label">- Pilih Ruangan</label>
                         <select class="form-select" name="ruangan_id" id="ruangan_id"> {{-- ganti: ruang_id -> ruangan_id --}}

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -163,32 +164,75 @@ class PenjadwalanController extends Controller
     {
         $data = $request->validate([
             'hari'     => 'required|integer|min:1|max:5',     // 1=Senin .. 5=Jumat
-            'jam'      => 'required|integer|min:0|max:12',    // jam-ke
+            'jam'      => 'required|integer|min:0|max:12',    // jam-ke (0 boleh)
             'kelas_id' => 'required|exists:kelas,id',
 
-            // Mapel (jika diisi -> otomatis jadi jenis MAPEL)
-            'guru_mata_pelajaran_id' => 'nullable|exists:guru_mata_pelajaran,id',
-            'ruangan_id'             => 'nullable|exists:ruangan,id',
+            // izinkan string "nonmapel_*" ATAU numerik ID
+            'guru_mata_pelajaran_id' => ['nullable'],
 
-            // Kegiatan non-mapel (dipakai kalau guru_mata_pelajaran_id kosong)
-            'jenis' => 'required_without:guru_mata_pelajaran_id|in:ISTIRAHAT,EKSKUL,UPACARA,KEGIATAN',
+            'ruangan_id' => 'nullable|exists:ruangan,id',
+
+            // tidak wajib dikirim; untuk non-mapel kita turunkan otomatis dari value radio
+            'jenis' => ['nullable', Rule::in(['ISTIRAHAT', 'EKSKUL', 'UPACARA', 'LITERASI', 'KEBERSIHAN'])],
         ]);
 
-        // Cek bentrok kelas
-        if (JadwalPelajaran::where([
+        // Cek slot kelas sudah terisi?
+        $sudahAda = JadwalPelajaran::where([
             'kelas_id' => $data['kelas_id'],
-            'hari' => $data['hari'],
-            'jam' => $data['jam']
-        ])->exists()) {
+            'hari'     => $data['hari'],
+            'jam'      => $data['jam'],
+        ])->exists();
+
+        if ($sudahAda) {
             return back()->with('toast_error', 'Slot kelas pada hari & jam tersebut sudah terisi.');
         }
 
-        // MODE MAPEL
-        if (!empty($data['guru_mata_pelajaran_id'])) {
-            $gmp   = GuruMapel::with('guru', 'mataPelajaran')->findOrFail($data['guru_mata_pelajaran_id']);
+        $selected = $data['guru_mata_pelajaran_id'];
+
+        // =========================
+        // MODE NON-MAPEL (nonmapel_*)
+        // =========================
+        if (is_string($selected) && Str::startsWith($selected, 'nonmapel_')) {
+            $key = Str::after($selected, 'nonmapel_'); // 'upacara' | 'literasi' | 'kebersihan' | 'ekskul' | 'istirahat'
+
+            // simpan jenis SPESIFIK agar UI tidak "strip"
+            $mapJenis = [
+                'upacara'    => 'UPACARA',
+                'istirahat'  => 'ISTIRAHAT',
+                'ekskul'     => 'EKSKUL',
+                'literasi'   => 'LITERASI',
+                'kebersihan' => 'KEBERSIHAN',
+            ];
+
+            if (!isset($mapJenis[$key])) {
+                return back()->with('toast_error', 'Pilihan non-mapel tidak dikenal.');
+            }
+
+            JadwalPelajaran::create([
+                'hari'                    => $data['hari'],
+                'jam'                     => $data['jam'],
+                'kelas_id'                => $data['kelas_id'],
+                'guru_mata_pelajaran_id'  => null,
+                'ruangan_id'              => $data['ruangan_id'] ?? null,
+                'jenis'                   => $mapJenis[$key], // simpan LITERASI/KEBERSIHAN/...
+            ]);
+
+            return back()->with('toast_success', 'Kegiatan non-mapel berhasil ditambahkan.');
+        }
+
+        // =========================
+        // MODE MAPEL AKADEMIK (ID numerik)
+        // =========================
+        if (!empty($selected)) {
+            // validasi ID numerik exist (karena tidak pakai rule exists langsung)
+            if (!ctype_digit((string)$selected) || !DB::table('guru_mata_pelajaran')->where('id', $selected)->exists()) {
+                return back()->with('toast_error', 'Guru & mata pelajaran tidak valid.');
+            }
+
+            $gmp   = GuruMapel::with('guru', 'mataPelajaran')->findOrFail((int)$selected);
             $kelas = Kelas::findOrFail($data['kelas_id']);
 
-            // Praktikum wajib pilih ruangan; Teori otomatis pakai ruangan kelas (kalau ada)
+            // Praktikum wajib ruangan; Teori pakai ruangan kelas (kalau ada)
             $ruanganId = ($gmp->jenis ?? null) === 'PRAKTIKUM'
                 ? ($data['ruangan_id'] ?? null)
                 : ($kelas->ruangan_id ?? null);
@@ -197,9 +241,8 @@ class PenjadwalanController extends Controller
                 return back()->with('toast_error', 'Pilih ruangan untuk mapel praktik.');
             }
 
-            // Cek be// Cek bentrok guru (berdasarkan guru_id, bukan gmp)
-            $guruId = $gmp->guru->id ?? DB::table('guru_mata_pelajaran')
-                ->where('id', $gmp->id)->value('guru_id');
+            // Cek bentrok guru (berdasarkan guru_id)
+            $guruId = $gmp->guru->id ?? DB::table('guru_mata_pelajaran')->where('id', $gmp->id)->value('guru_id');
 
             $guruBentrok = DB::table('jadwal_pelajaran as jp')
                 ->join('guru_mata_pelajaran as gg', 'gg.id', '=', 'jp.guru_mata_pelajaran_id')
@@ -213,37 +256,48 @@ class PenjadwalanController extends Controller
             }
 
             // Cek bentrok ruangan (jika ada)
-            if ($ruanganId && JadwalPelajaran::where([
-                'ruangan_id' => $ruanganId,
-                'hari' => $data['hari'],
-                'jam' => $data['jam']
-            ])->exists()) {
-                return back()->with('toast_error', 'Ruangan bentrok di slot tersebut.');
+            if ($ruanganId) {
+                $existsRuang = JadwalPelajaran::where([
+                    'ruangan_id' => $ruanganId,
+                    'hari'       => $data['hari'],
+                    'jam'        => $data['jam'],
+                ])->exists();
+
+                if ($existsRuang) {
+                    return back()->with('toast_error', 'Ruangan bentrok di slot tersebut.');
+                }
             }
 
             JadwalPelajaran::create([
-                'hari'   => $data['hari'],
-                'jam'    => $data['jam'],
-                'kelas_id' => $data['kelas_id'],
-                'guru_mata_pelajaran_id' => $gmp->id,
-                'ruangan_id' => $ruanganId,
-                'jenis'  => 'MAPEL',
+                'hari'                    => $data['hari'],
+                'jam'                     => $data['jam'],
+                'kelas_id'                => $data['kelas_id'],
+                'guru_mata_pelajaran_id'  => $gmp->id,
+                'ruangan_id'              => $ruanganId,
+                'jenis'                   => 'MAPEL',
             ]);
 
             return back()->with('toast_success', 'Mapel berhasil ditambahkan.');
         }
 
-        // MODE KEGIATAN (non-mapel: Upacara/Senam/Literasi/Kebersihan/Ekskul/Istirahat)
-        JadwalPelajaran::create([
-            'hari'   => $data['hari'],
-            'jam'    => $data['jam'],
-            'kelas_id' => $data['kelas_id'],
-            'guru_mata_pelajaran_id' => null,
-            'ruangan_id' => $data['ruangan_id'] ?? null,
-            'jenis'  => $data['jenis'],  // ISTIRAHAT / EKSKUL / UPACARA / KEGIATAN
-        ]);
+        // =========================
+        // FALLBACK: tidak memilih apa pun
+        // (kalau kamu tetap kirim field 'jenis' dari form manual)
+        // =========================
+        if (!empty($data['jenis'])) {
+            JadwalPelajaran::create([
+                'hari'                    => $data['hari'],
+                'jam'                     => $data['jam'],
+                'kelas_id'                => $data['kelas_id'],
+                'guru_mata_pelajaran_id'  => null,
+                'ruangan_id'              => $data['ruangan_id'] ?? null,
+                'jenis'                   => $data['jenis'], // ISTIRAHAT/EKSKUL/UPACARA/LITERASI/KEBERSIHAN
+            ]);
 
-        return back()->with('toast_success', 'Kegiatan berhasil ditambahkan.');
+            return back()->with('toast_success', 'Kegiatan berhasil ditambahkan.');
+        }
+
+        return back()->with('toast_error', 'Pilih salah satu: mapel akademik atau non-mapel.');
     }
 
     public function update(Request $request, $id)
@@ -251,31 +305,80 @@ class PenjadwalanController extends Controller
         $jadwal = JadwalPelajaran::findOrFail($id);
 
         $data = $request->validate([
-            'hari'     => 'required|integer|min:1|max:5',
-            'jam'      => 'required|integer|min:0|max:12',
+            'hari'     => 'required|integer|min:1|max:5',   // 1=Senin..5=Jumat
+            'jam'      => 'required|integer|min:0|max:12',  // jam-ke (0 diperbolehkan)
             'kelas_id' => 'required|exists:kelas,id',
 
-            'guru_mata_pelajaran_id' => 'nullable|exists:guru_mata_pelajaran,id',
-            'ruangan_id'             => 'nullable|exists:ruangan,id',
+            // Boleh numerik (ID gmp) atau string "nonmapel_*"
+            'guru_mata_pelajaran_id' => ['nullable'],
 
-            'jenis' => 'required_without:guru_mata_pelajaran_id|in:ISTIRAHAT,EKSKUL,UPACARA,KEGIATAN',
+            'ruangan_id' => 'nullable|exists:ruangan,id',
+            // jenis boleh kosong; untuk nonmapel kita turunkan otomatis dari value radio
+            'jenis'      => ['nullable', Rule::in(['ISTIRAHAT', 'EKSKUL', 'UPACARA', 'KEGIATAN'])],
         ]);
 
-        // Cek bentrok kelas (kecuali dirinya)
+        // CEK SLOT KELAS (kecuali dirinya)
         $existsKelas = JadwalPelajaran::where([
             'kelas_id' => $data['kelas_id'],
-            'hari' => $data['hari'],
-            'jam' => $data['jam']
+            'hari'     => $data['hari'],
+            'jam'      => $data['jam'],
         ])->where('id', '!=', $jadwal->id)->exists();
+
         if ($existsKelas) {
             return back()->with('toast_error', 'Slot kelas pada hari & jam tersebut sudah terisi.');
         }
 
-        // MODE MAPEL
-        if (!empty($data['guru_mata_pelajaran_id'])) {
-            $gmp   = GuruMapel::with('guru', 'mataPelajaran')->findOrFail($data['guru_mata_pelajaran_id']);
+        $selected = $data['guru_mata_pelajaran_id'];
+
+        // =========================
+        // MODE NON-MAPEL (nonmapel_*)
+        // =========================
+        if (is_string($selected) && Str::startsWith($selected, 'nonmapel_')) {
+            $key = Str::after($selected, 'nonmapel_'); // 'upacara' / 'literasi' / 'kebersihan' / 'ekskul' / 'istirahat'
+
+            // Mapping ke jenis + label tampilan
+            $map = [
+                'upacara'    => ['jenis' => 'UPACARA',   'label' => 'UPACARA'],
+                'istirahat'  => ['jenis' => 'ISTIRAHAT', 'label' => 'ISTIRAHAT'],
+                'ekskul'     => ['jenis' => 'EKSKUL',    'label' => 'EKSKUL'],
+                'literasi'   => ['jenis' => 'KEGIATAN',  'label' => 'LITERASI'],
+                'kebersihan' => ['jenis' => 'KEGIATAN',  'label' => 'KEBERSIHAN'],
+            ];
+            if (!array_key_exists($key, $map)) {
+                return back()->with('toast_error', 'Pilihan non-mapel tidak dikenal.');
+            }
+            $non = $map[$key];
+
+            $payload = [
+                'hari'     => $data['hari'],
+                'jam'      => $data['jam'],
+                'kelas_id' => $data['kelas_id'],
+                'guru_mata_pelajaran_id' => null,
+                'ruangan_id' => $data['ruangan_id'] ?? null,
+                'jenis'    => $non['jenis'],     // ISTIRAHAT / EKSKUL / UPACARA / KEGIATAN
+            ];
+
+            // Jika tabel punya kolom 'nama_kegiatan', isi label untuk UI
+            if (Schema::hasColumn('jadwal_pelajaran', 'nama_kegiatan')) {
+                $payload['nama_kegiatan'] = $non['label'];
+            }
+
+            $jadwal->update($payload);
+            return back()->with('toast_success', 'Kegiatan non-mapel berhasil diperbarui.');
+        }
+
+
+        // MODE MAPEL AKADEMIK (ID numerik)   
+        if (!empty($selected)) {
+            // Validasi ID numerik & exist
+            if (!ctype_digit((string)$selected) || !DB::table('guru_mata_pelajaran')->where('id', $selected)->exists()) {
+                return back()->with('toast_error', 'Guru & mata pelajaran tidak valid.');
+            }
+
+            $gmp   = GuruMapel::with('guru', 'mataPelajaran')->findOrFail((int)$selected);
             $kelas = Kelas::findOrFail($data['kelas_id']);
 
+            // Praktikum wajib pilih ruangan; teori pakai ruangan kelas (jika ada)
             $ruanganId = ($gmp->jenis ?? null) === 'PRAKTIKUM'
                 ? ($data['ruangan_id'] ?? null)
                 : ($kelas->ruangan_id ?? null);
@@ -284,51 +387,71 @@ class PenjadwalanController extends Controller
                 return back()->with('toast_error', 'Pilih ruangan untuk mapel praktik.');
             }
 
-            // Bentrok guru (kecuali dirinya)
-            $existsGuru = JadwalPelajaran::where([
-                'guru_mata_pelajaran_id' => $gmp->id,
-                'hari' => $data['hari'],
-                'jam' => $data['jam']
-            ])->where('id', '!=', $jadwal->id)->exists();
-            if ($existsGuru) {
+            // CEK BENTROK GURU (berdasarkan guru_id, kecuali dirinya)
+            $guruId = $gmp->guru->id
+                ?? DB::table('guru_mata_pelajaran')->where('id', $gmp->id)->value('guru_id');
+
+            $guruBentrok = DB::table('jadwal_pelajaran as jp')
+                ->join('guru_mata_pelajaran as gg', 'gg.id', '=', 'jp.guru_mata_pelajaran_id')
+                ->where('jp.hari', $data['hari'])
+                ->where('jp.jam',  $data['jam'])
+                ->where('gg.guru_id', $guruId)
+                ->where('jp.id', '!=', $jadwal->id)
+                ->exists();
+
+            if ($guruBentrok) {
                 return back()->with('toast_error', 'Guru sudah mengajar di slot tersebut.');
             }
 
-            // Bentrok ruangan (kecuali dirinya)
+            // CEK BENTROK RUANGAN (kecuali dirinya)
             if ($ruanganId) {
                 $existsRuangan = JadwalPelajaran::where([
                     'ruangan_id' => $ruanganId,
-                    'hari' => $data['hari'],
-                    'jam' => $data['jam']
+                    'hari'       => $data['hari'],
+                    'jam'        => $data['jam'],
                 ])->where('id', '!=', $jadwal->id)->exists();
+
                 if ($existsRuangan) {
                     return back()->with('toast_error', 'Ruangan bentrok di slot tersebut.');
                 }
             }
 
-            $jadwal->update([
-                'hari'   => $data['hari'],
-                'jam'    => $data['jam'],
+            $payload = [
+                'hari'     => $data['hari'],
+                'jam'      => $data['jam'],
                 'kelas_id' => $data['kelas_id'],
                 'guru_mata_pelajaran_id' => $gmp->id,
                 'ruangan_id' => $ruanganId,
-                'jenis'  => 'MAPEL',
-            ]);
+                'jenis'    => 'MAPEL',
+            ];
 
+            // Jika sebelumnya entri adalah non-mapel dan tabel punya 'nama_kegiatan', bersihkan agar tidak nyangkut
+            if (Schema::hasColumn('jadwal_pelajaran', 'nama_kegiatan')) {
+                $payload['nama_kegiatan'] = null;
+            }
+
+            $jadwal->update($payload);
             return back()->with('toast_success', 'Mapel berhasil diperbarui.');
         }
 
-        // MODE KEGIATAN
-        $jadwal->update([
-            'hari'   => $data['hari'],
-            'jam'    => $data['jam'],
-            'kelas_id' => $data['kelas_id'],
-            'guru_mata_pelajaran_id' => null,
-            'ruangan_id' => $data['ruangan_id'] ?? null,
-            'jenis'  => $data['jenis'],
-        ]);
+        if (!empty($data['jenis'])) {
+            $payload = [
+                'hari'     => $data['hari'],
+                'jam'      => $data['jam'],
+                'kelas_id' => $data['kelas_id'],
+                'guru_mata_pelajaran_id' => null,
+                'ruangan_id' => $data['ruangan_id'] ?? null,
+                'jenis'    => $data['jenis'],
+            ];
+            if (Schema::hasColumn('jadwal_pelajaran', 'nama_kegiatan')) {
+                // Pakai jenis sebagai label default
+                $payload['nama_kegiatan'] = $data['jenis'];
+            }
+            $jadwal->update($payload);
+            return back()->with('toast_success', 'Kegiatan berhasil diperbarui.');
+        }
 
-        return back()->with('toast_success', 'Kegiatan berhasil diperbarui.');
+        return back()->with('toast_error', 'Pilih salah satu: mapel akademik atau non-mapel.');
     }
 
     public function destroy($id)
@@ -617,8 +740,6 @@ class PenjadwalanController extends Controller
         return ['mulai' => $mulai ?? '00:00', 'selesai' => $selesai ?? '00:00'];
     }
 
-    public function __construct(private JadwalGeneratorLegacy $generator) {}
-
     public function generate(Request $req, \App\Services\JadwalGeneratorLegacy $generator)
     {
         $mode = $req->input('mode', 'global');
@@ -659,7 +780,7 @@ class PenjadwalanController extends Controller
         $key = 'ga_preview:' . ($req->user()?->id ?? 'guest') . ':' . $mode . ':' . Str::uuid();
         Cache::put($key, $rows->all(), now()->addHours(5));
 
-        // meta + simpan fokus agar “stay”
+        // meta + simpan fokus agar stay
         $meta = ['mode' => $mode, 'kelas_ids' => $mode === 'kelas' ? [$kelasFocusId] : []];
         session(['ga_preview_key' => $key, 'ga_preview_meta' => $meta]);
 
@@ -670,7 +791,7 @@ class PenjadwalanController extends Controller
             // simpan juga ke session supaya index bisa fallback
             session(['kelas_terpilih_id' => $kelasFocusId]);
         } elseif ($req->filled('current_kelas_nama')) {
-            // jika kamu prefer pakai nama langsung
+            // prefer pakai nama langsung
             $namaKelas = $req->input('current_kelas_nama');
         }
 

@@ -63,7 +63,7 @@ $hariLabel = [1=>'Senin',2=>'Selasa',3=>'Rabu',4=>'Kamis',5=>'Jumat',6=>'Sabtu']
                             @if ($r->jenis === 'MAPEL')
                             {{ $gmpNames[$r->guru_mata_pelajaran_id]
                    ?? $r->snapshot_text
-                   ?? 'MAPEL – (guru/mapel tidak ditemukan)' }}
+                   ?? 'MAPEL - (guru/mapel tidak ditemukan)' }}
                             @else
                             —
                             @endif

@@ -30,7 +30,7 @@ class HistoryJadwalController extends Controller
             ->fromSub($base, 'b')
             ->orderByDesc('waktu_aksi')
             ->paginate($perPage)
-            ->withQueryString(); // bawa ?per_page atau parameter lain
+            ->withQueryString(); 
 
         return view('admin.histori.index', compact('batches'));
     }
@@ -57,8 +57,8 @@ class HistoryJadwalController extends Controller
         $kelasNames   = Kelas::pluck('nama_kelas', 'id');
         $ruanganNames = Ruangan::pluck('nama', 'id');
 
-        // Ambil hanya gmp_id yang tampil di HALAMAN INI (hemat query)
-        $pageItems = $rows->getCollection(); // Collection item halaman aktif
+        // Ambil hanya gmp_id yang tampil di HALAMAN INI
+        $pageItems = $rows->getCollection();
         $gmpIds = $pageItems->pluck('guru_mata_pelajaran_id')->filter()->unique();
 
         $gmpNames = collect();
