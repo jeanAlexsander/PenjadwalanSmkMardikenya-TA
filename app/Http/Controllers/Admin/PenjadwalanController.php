@@ -280,10 +280,6 @@ class PenjadwalanController extends Controller
             return back()->with('toast_success', 'Mapel berhasil ditambahkan.');
         }
 
-        // =========================
-        // FALLBACK: tidak memilih apa pun
-        // (kalau kamu tetap kirim field 'jenis' dari form manual)
-        // =========================
         if (!empty($data['jenis'])) {
             JadwalPelajaran::create([
                 'hari'                    => $data['hari'],

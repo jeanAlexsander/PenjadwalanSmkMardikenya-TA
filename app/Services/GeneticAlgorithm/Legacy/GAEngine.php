@@ -245,6 +245,59 @@ class GAEngine
         return $p;
     }
 
+    private function hitungSlotKosongSoft(array $perKelasHari): int
+    {
+        $pen = 0;
+        $jamIst = $this->getJamIstirahat();
+
+        foreach ($perKelasHari as $kelasId => $byHari) {
+            foreach ($byHari as $hari => $slots) {
+                if (empty($slots)) continue;
+
+                ksort($slots);
+
+                // Abaikan slot non-pelajaran untuk lubang
+                $isPelajaran = fn($nama) => !in_array($nama, ['ISTIRAHAT', 'EKSKUL'], true);
+
+                $jamList = array_keys($slots);
+                $minJ = min($jamList);
+                $maxJ = max($jamList);
+
+                // Cari rentang aktif (dari pelajaran pertama ke pelajaran terakhir)
+                $first = null;
+                $last = null;
+                foreach ($slots as $j => $nama) {
+                    if ($isPelajaran($nama)) {
+                        $first = $j;
+                        break;
+                    }
+                }
+                if ($first === null) continue; // tidak ada pelajaran sama sekali hari itu
+                foreach (array_reverse(array_keys($slots)) as $j) {
+                    if ($isPelajaran($slots[$j])) {
+                        $last = $j;
+                        break;
+                    }
+                }
+                if ($last === null || $last <= $first) continue;
+
+                // Hitung lubang di tengah rentang [first..last]
+                for ($j = $first; $j <= $last; $j++) {
+                    // skip istirahat
+                    if (in_array($j, $jamIst, true)) continue;
+
+                    $nama = $slots[$j] ?? null;
+                    if ($nama === null) {
+                        $pen++;
+                    } else {
+                        if (!$isPelajaran($nama)) $pen++;
+                    }
+                }
+            }
+        }
+        return $pen;
+    }
+
     private function hitungFitness(array $jadwalBundle, array $mapelList, float $alpha, float $beta): float
     {
         $jadwal = $jadwalBundle['jadwal'] ?? [];
@@ -272,7 +325,7 @@ class GAEngine
         foreach ($sisa as $mapelSisa) foreach ($mapelSisa as $kurang) $hardPenalty += $kurang;
 
         $softPenalty += $this->penaltiGapSoft($perKelasHari);
-        // $softPenalty += $this->hitungSlotKosongSoft($perKelasHari); // opsional
+        $softPenalty += $this->hitungSlotKosongSoft($perKelasHari); // opsional
 
         return 1.0 / (1.0 + $alpha * $hardPenalty + $beta * $softPenalty);
     }
@@ -311,6 +364,15 @@ class GAEngine
         return ['fitness' => $fitness, 'hard' => $hard, 'soft' => $soft, 'conflicts' => $conflicts];
     }
 
+    private function seleksiTurnamen(array $pop, int $k = 3): array
+    {
+        $k = max(2, $k);
+        $cand = [];
+        for ($i = 0; $i < $k; $i++) $cand[] = $pop[array_rand($pop)];
+        usort($cand, fn($a, $b) => $b['fitness'] <=> $a['fitness']);
+        return ['jadwal' => $cand[0]['jadwal'], 'fitness' => $cand[0]['fitness']];
+    }
+
     // ===== Operator GA =====
     private function crossover(array $parentA, array $parentB): array
     {
@@ -335,43 +397,49 @@ class GAEngine
 
     private function mutasi(array &$individu, float $prob = 0.15): void
     {
+        // probabilitas mutasi
         if (mt_rand() / mt_getrandmax() > $prob) return;
 
         $jadwal = &$individu['jadwal'];
         if (count($jadwal) < 2) return;
 
+        // pilih satu entry acak
         $idx1 = array_rand($jadwal);
-        $found = false;
-        $idx2 = null;
-        $tries = 0;
 
-        while ($tries++ < 30) {
+        // cari pasangan di kelas & hari yang sama (maks 30 percobaan)
+        $idx2 = null;
+        for ($tries = 0; $tries < 30; $tries++) {
             $cand = array_rand($jadwal);
             if ($cand === $idx1) continue;
             if (
-                $jadwal[$cand]['kelas'] === $jadwal[$idx1]['kelas'] &&
-                $jadwal[$cand]['hari']  === $jadwal[$idx1]['hari']
+                ($jadwal[$cand]['kelas'] ?? null) === ($jadwal[$idx1]['kelas'] ?? null) &&
+                ($jadwal[$cand]['hari']  ?? null) === ($jadwal[$idx1]['hari']  ?? null)
             ) {
                 $idx2 = $cand;
-                $found = true;
                 break;
             }
         }
-        if (!$found) return;
+        if ($idx2 === null) return;
 
-        if (in_array($jadwal[$idx1]['mapel'], ['ISTIRAHAT', 'EKSKUL'], true)) return;
-        if (in_array($jadwal[$idx2]['mapel'], ['ISTIRAHAT', 'EKSKUL'], true)) return;
+        if (in_array($jadwal[$idx1]['mapel'] ?? '', ['ISTIRAHAT', 'EKSKUL'], true)) return;
+        if (in_array($jadwal[$idx2]['mapel'] ?? '', ['ISTIRAHAT', 'EKSKUL'], true)) return;
 
-        [$jadwal[$idx1], $jadwal[$idx2]] = [$jadwal[$idx2], $jadwal[$idx1]];
-    }
+        $hari = $jadwal[$idx1]['hari'];
 
-    private function seleksiTurnamen(array $pop, int $k = 3): array
-    {
-        $k = max(2, $k);
-        $cand = [];
-        for ($i = 0; $i < $k; $i++) $cand[] = $pop[array_rand($pop)];
-        usort($cand, fn($a, $b) => $b['fitness'] <=> $a['fitness']);
-        return ['jadwal' => $cand[0]['jadwal'], 'fitness' => $cand[0]['fitness']];
+        // cegah pindah ke slot istirahat/ekskul time
+        $jamIst  = $this->getJamIstirahat();
+        $jamEks  = $this->getJamEkskul($hari) ?? [];
+
+        $jam1 = $jadwal[$idx1]['jam'];
+        $jam2 = $jadwal[$idx2]['jam'];
+
+        // jika salah satu jam adalah istirahat/ekskul time, batalkan
+        if (in_array($jam1, $jamIst, true) || in_array($jam2, $jamIst, true)) return;
+        if (in_array($jam1, $jamEks, true) || in_array($jam2, $jamEks, true)) return;
+
+        // === SWAP: tukar nilai JAM (ini yang benar-benar memindahkan slot) ===
+        $jadwal[$idx1]['jam'] = $jam2;
+        $jadwal[$idx2]['jam'] = $jam1;
     }
 
     // ===== Repair =====
