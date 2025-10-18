@@ -1,7 +1,59 @@
 @extends('layouts.main')
 
 @section('content')
-<h1 class="mb-4">Jadwal Mengajar</h1>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">Jadwal Mengajar</h1>
+    <div class="no-print">
+        <button onclick="window.print()" class="btn btn-outline-primary">
+            <i class="fas fa-print me-1"></i> Cetak
+        </button>
+        <a href="{{ route('guru.jadwal.cetak.pdf') }}" class="btn btn-primary">
+            <i class="fas fa-file-pdf me-1"></i> Unduh PDF
+        </a>
+    </div>
+</div>
+
+<style>
+    /* elemen yang tidak perlu ikut tercetak */
+    @media print {
+
+        .no-print,
+        .no-print * {
+            display: none !important;
+        }
+
+        /* rapikan tabel saat print */
+        .table {
+            border-collapse: collapse !important;
+        }
+
+        .table th,
+        .table td {
+            border: 1px solid #000 !important;
+            padding: 6px 8px !important;
+        }
+
+        /* hilangkan warna bootstrap agar hemat tinta */
+        .table-primary,
+        .table-success,
+        .table-warning,
+        .table-info,
+        .table-light {
+            background: #fff !important;
+        }
+
+        /* header halaman */
+        @page {
+            size: A4 portrait;
+            margin: 12mm;
+        }
+
+        h1 {
+            font-size: 18pt;
+            margin-bottom: 12px;
+        }
+    }
+</style>
 
 <div class="table-responsive">
     <table class="table table-bordered text-center">
@@ -31,13 +83,8 @@
             @foreach ($hariUrut as $hari)
             @if ($grouped->has($hari))
             @php
-            // Urutkan item per hari: pakai jam_sort jika ada, selain itu pakai jam string
             $items = $grouped[$hari]->sortBy(function($row){
-            // array access
-            if (is_array($row)) {
-            return $row['jam_sort'] ?? $row['jam'] ?? 9999;
-            }
-            // object access (jaga-jaga)
+            if (is_array($row)) return $row['jam_sort'] ?? $row['jam'] ?? 9999;
             return $row->jam_sort ?? $row->jam ?? 9999;
             })->values();
             @endphp
@@ -47,7 +94,6 @@
                 @if ($idx === 0)
                 <td rowspan="{{ $items->count() }}" class="align-middle text-center fw-bold">{{ $hari }}</td>
                 @endif
-
                 <td>{{ is_array($item) ? ($item['jam'] ?? '-') : ($item->jam ?? '-') }}</td>
                 <td>{{ is_array($item) ? ($item['mapel'] ?? '-') : ($item->mapel ?? '-') }}</td>
                 <td>{{ is_array($item) ? ($item['kelas'] ?? '-') : ($item->kelas ?? '-') }}</td>
@@ -60,9 +106,7 @@
             @endforeach
 
             @if (!$printed)
-            <td colspan="6" class="text-center table-warning">
-                Belum ada jadwal mengajar.
-            </td>
+            <td colspan="6" class="text-center table-warning">Belum ada jadwal mengajar.</td>
             @endif
         </tbody>
     </table>
