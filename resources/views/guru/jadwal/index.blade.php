@@ -4,9 +4,6 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="mb-0">Jadwal Mengajar</h1>
     <div class="no-print">
-        <button onclick="window.print()" class="btn btn-outline-primary">
-            <i class="fas fa-print me-1"></i> Cetak
-        </button>
         <a href="{{ route('guru.jadwal.cetak.pdf') }}" class="btn btn-primary">
             <i class="fas fa-file-pdf me-1"></i> Unduh PDF
         </a>

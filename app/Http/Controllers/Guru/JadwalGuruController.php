@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Guru;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 
 class JadwalGuruController extends Controller
@@ -25,7 +28,7 @@ class JadwalGuruController extends Controller
             $mapHari = [1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu', 4 => 'Kamis', 5 => 'Jumat'];
 
             // Durasi per slot (0..12) untuk fallback
-            $durasi = [45, 40, 40, 40, 30, 40, 40, 40, 35, 40, 40, 40, 40]; // jam-0 s.d. jam-12
+            $durasi = [30, 40, 40, 40, 30, 40, 40, 40, 50, 40, 40, 40, 40]; // jam-0 s.d. jam-12
 
             foreach ($user->guru->guruMapel as $gm) {
                 foreach ($gm->jadwalPelajaran as $jp) {
@@ -93,5 +96,44 @@ class JadwalGuruController extends Controller
         }
 
         return view('guru.jadwal.index', compact('jadwal'));
+    }
+
+    public function cetakPdf(Request $request)
+    {
+        $user = Auth::user();
+
+        $jadwal = DB::table('jadwal_pelajaran as jp')
+            ->select([
+                'jp.hari',
+                'jp.jam',
+                'm.nama_mata_pelajaran as mapel',
+                'k.nama_kelas as kelas',
+                'r.nama as ruang',
+            ])
+            ->join('guru_mata_pelajaran as gmp', 'gmp.id', '=', 'jp.guru_mata_pelajaran_id') // sesuai migrasi
+            ->join('gurus as g', 'g.id', '=', 'gmp.guru_id')
+            ->leftJoin('mata_pelajaran as m', 'm.id', '=', 'gmp.mata_pelajaran_id')          // kolomnya nama_mata_pelajaran
+            ->leftJoin('kelas as k', 'k.id', '=', 'jp.kelas_id')                              // kolomnya nama_kelas
+            ->leftJoin('ruangan as r', 'r.id', '=', 'jp.ruangan_id')                          // tabel ruangan (tanpa s)
+            ->where('g.user_id', $user->id)
+            ->orderBy('jp.hari')
+            ->orderBy('jp.jam')
+            ->get();
+
+        // mapping angka hari -> label (1=Senin .. 6=Sabtu)
+        $mapHari = [1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu', 4 => 'Kamis', 5 => 'Jumat', 6 => 'Sabtu'];
+        $jadwal = $jadwal->map(function ($row) use ($mapHari) {
+            $row->hari_label = $mapHari[$row->hari] ?? $row->hari;
+            return $row;
+        });
+
+        $pdf = Pdf::loadView('guru.jadwal.pdf', [
+            'jadwal'      => $jadwal,
+            'guruNama'    => $user->guru->name,
+            'dicetakPada' => now()->format('d M Y H:i'),
+        ])
+            ->setPaper('A4', 'portrait');
+
+        return $pdf->download('jadwal-mengajar-' . $user->id . '.pdf');
     }
 }

@@ -135,7 +135,7 @@ Route::middleware(['auth', 'role:guru'])->group(function () {
     Route::get('/guru/jadwal', [JadwalGuruController::class, 'index'])->name('guru.jadwal.index');
     Route::get('/guru/profil', [ProfilGuruController::class, 'index'])->name('guru.profil.index');
     Route::get('/guru/jadwal_khusus', [JadwalKhususGuruController::class, 'index'])->name('guru.jadwal_khusus.index');
-
+    Route::get('/guru/jadwal/cetak-pdf', [JadwalGuruController::class, 'cetakPdf'])->name('guru.jadwal.cetak.pdf');
     // ✅ Tambahan untuk fitur ganti password
     Route::put('/guru/profil/update-password', [GuruProfilController::class, 'updatePassword'])->name('guru.profil.update-password');
 });
